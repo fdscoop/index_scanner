@@ -546,41 +546,81 @@ def analyze():
         analyzer = NiftyOptionsAnalyzer()
         result = analyzer.comprehensive_trading_analysis(stock_name, data_string)
 
-        # Flatten and simplify the response with explicit type conversions
-        flattened_response = {
-            "status": "success",
-            "technical_data": [{str(k): str(v) for k, v in item.items()} for item in result['technical_data']],
-            "fibonacci_levels": {str(k): str(v) for k, v in result['fibonacci_levels'].items()},
-            "game_theory": {
-                "market_probabilities": {
-                    str(k): str(v) for k, v in result['game_theory']['market_probabilities'].items()
-                },
-                "recommended_strategy": str(result['game_theory']['recommended_strategy'])
+        # Create a unified array of analysis results
+        unified_analysis = [
+            {
+                "type": "technical_data",
+                "data": [{str(k): str(v) for k, v in item.items()} for item in result['technical_data']]
             },
-            "breakeven_analysis": {
-                str(k): str(v) for k, v in result['breakeven_analysis'].items()
+            {
+                "type": "fibonacci_levels",
+                "data": [{
+                    "level": str(k),
+                    "value": str(v)
+                } for k, v in result['fibonacci_levels'].items()]
             },
-            "sentiment_analysis": [{str(k): str(v) for k, v in item.items()} for item in result['sentiment_analysis']],
-            "swot_analysis": {
-                str(k): [str(v) for v in result['swot_analysis'][k]]
-                for k in result['swot_analysis']
+            {
+                "type": "market_probabilities",
+                "data": [{
+                    "scenario": str(k),
+                    "probability": str(v)
+                } for k, v in result['game_theory']['market_probabilities'].items()]
             },
-            "option_greeks": {
-                str(k): {str(subk): str(subv) for subk, subv in v.items()}
-                for k, v in result['option_greeks'].items()
+            {
+                "type": "recommended_strategy",
+                "data": [{
+                    "strategy": str(result['game_theory']['recommended_strategy'])
+                }]
             },
-            "market_report": str(result['market_report']),
-            "plot_base64": str(result['plot_base64'])
-        }
+            {
+                "type": "breakeven_analysis",
+                "data": [{
+                    "metric": str(k),
+                    "value": str(v)
+                } for k, v in result['breakeven_analysis'].items()]
+            },
+            {
+                "type": "sentiment_analysis",
+                "data": [{str(k): str(v) for k, v in item.items()} for item in result['sentiment_analysis']]
+            },
+            {
+                "type": "swot_analysis",
+                "data": [{
+                    "category": str(k),
+                    "points": [str(v) for v in result['swot_analysis'][k]]
+                } for k in result['swot_analysis']]
+            },
+            {
+                "type": "option_greeks",
+                "data": [{
+                    "option_type": str(k),
+                    "metrics": {str(subk): str(subv) for subk, subv in v.items()}
+                } for k, v in result['option_greeks'].items()]
+            },
+            {
+                "type": "market_report",
+                "data": [{
+                    "report": str(result['market_report'])
+                }]
+            },
+            {
+                "type": "visualization",
+                "data": [{
+                    "plot": str(result['plot_base64'])
+                }]
+            }
+        ]
 
-        return jsonify(flattened_response)
+        return jsonify({
+            "status": "success",
+            "analysis_results": unified_analysis
+        })
 
     except Exception as e:
         return jsonify({
             "status": "error",
             "message": str(e)
         }), 500
-
 @app.route("/")
 def home():
     """
