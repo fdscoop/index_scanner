@@ -33,29 +33,27 @@ class NiftyOptionsAnalyzer:
         self.fib_ratios = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1]
         self.historical_data = None
 
-    def parse_custom_data(self, stock_name, data_string):
+    def parse_custom_data(self, stock_name, data_array):
         """
-        Parse custom data string into DataFrame
+        Parse array data into DataFrame
         """
-        # Split data into groups of 6
-        data_points = data_string.split(', ')
-        rows = [data_points[i:i+6] for i in range(0, len(data_points), 6)]
-
-        # Create DataFrame
-        columns = ['Datetime', 'Open', 'High', 'Low', 'Close', 'Volume']
-        df = pd.DataFrame(rows, columns=columns)
-
+        # Convert array data to DataFrame
+        df = pd.DataFrame(
+            data_array,
+            columns=['Datetime', 'Open', 'High', 'Low', 'Close', 'Volume']
+        )
+        
         # Convert data types
-        df['Datetime'] = pd.to_datetime(df['Datetime'], errors='coerce')
+        df['Datetime'] = pd.to_datetime(df['Datetime'])
         for col in ['Open', 'High', 'Low', 'Close', 'Volume']:
-          df[col] = pd.to_numeric(df[col], errors='coerce')
-
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+        
         # Drop rows with NaN if any conversion fails
         df.dropna(inplace=True)
-
+        
         df.set_index('Datetime', inplace=True)
         self.historical_data = df
-
+        
         return df
     def calculate_comprehensive_technical_indicators(self):
         """
@@ -439,175 +437,166 @@ class NiftyOptionsAnalyzer:
             'recommended_strategy': max(strategy_ev.items(), key=lambda x: x[1])[0]
         }
 
-    def comprehensive_trading_analysis(self, stock_name, data_string):
+    def comprehensive_trading_analysis(self, stock_name, data_array):
         """
-        Enhanced Comprehensive Market Analysis Workflow with Custom Stock Name
+        Enhanced Comprehensive Market Analysis Workflow with Array Data Input
         """
-        # First parse the input data
-        self.parse_custom_data(stock_name, data_string)
+        try:
+            # Parse the input array data
+            self.parse_custom_data(stock_name, data_array)
 
-        # Technical Indicators
-        technical_data = self.calculate_comprehensive_technical_indicators()
+            # Technical Indicators
+            technical_data = self.calculate_comprehensive_technical_indicators()
 
-        # Convert technical_data index to string
-        technical_data_serializable = technical_data.reset_index()
-        technical_data_serializable['Datetime'] = technical_data_serializable['Datetime'].astype(str)
+            # Convert technical_data index to string for serialization
+            technical_data_serializable = technical_data.reset_index()
+            technical_data_serializable['Datetime'] = technical_data_serializable['Datetime'].astype(str)
 
-        # Financial News & Sentiment
-        sentiment_data = self.fetch_financial_news(stock_name)
-        avg_sentiment = sentiment_data['sentiment_score'].mean() if not sentiment_data.empty else 0
+            # Financial News & Sentiment
+            sentiment_data = self.fetch_financial_news(stock_name)
+            avg_sentiment = sentiment_data['sentiment_score'].mean() if not sentiment_data.empty else 0
 
-        # SWOT Analysis
-        swot_analysis = self.perform_swot_analysis(technical_data)
+            # SWOT Analysis
+            swot_analysis = self.perform_swot_analysis(technical_data)
 
-        # Calculate Fibonacci levels
-        high = technical_data['High'].max()
-        low = technical_data['Low'].min()
-        fib_levels = self.calculate_fibonacci_levels(high, low)
+            # Calculate Fibonacci levels
+            high = technical_data['High'].max()
+            low = technical_data['Low'].min()
+            fib_levels = self.calculate_fibonacci_levels(high, low)
 
-        # Latest price for further calculations
-        latest_price = self.historical_data['Close'].iloc[-1]
+            # Latest price for further calculations
+            latest_price = self.historical_data['Close'].iloc[-1]
 
-        # Option Greeks and Breakeven Analysis
-        strike_price = latest_price * 1.05  # Example strike price 5% above current
-        option_greeks = self.calculate_option_greeks(
-            spot_price=latest_price,
-            strike_price=strike_price
-        )
+            # Option Greeks and Breakeven Analysis
+            strike_price = latest_price * 1.05  # Example strike price 5% above current
+            option_greeks = self.calculate_option_greeks(
+                spot_price=latest_price,
+                strike_price=strike_price
+            )
 
-        # Assume example premium of 2% of spot price
-        premium = latest_price * 0.02
-        breakeven_analysis = self.calculate_breakeven_analysis(
-            latest_price,
-            strike_price,
-            premium
-        )
+            # Assume example premium of 2% of spot price
+            premium = latest_price * 0.02
+            breakeven_analysis = self.calculate_breakeven_analysis(
+                latest_price,
+                strike_price,
+                premium
+            )
 
-        # Game Theory Analysis
-        game_theory_results = self.game_theory_analysis(technical_data, avg_sentiment)
+            # Game Theory Analysis
+            game_theory_results = self.game_theory_analysis(technical_data, avg_sentiment)
 
-        # AI Market Report
-        market_report = self.generate_ai_market_report(
-            technical_data,
-            sentiment_data,
-            swot_analysis
-        )
+            # AI Market Report
+            market_report = self.generate_ai_market_report(
+                technical_data,
+                sentiment_data,
+                swot_analysis
+            )
 
-        # Generate plots and convert to base64
-        plot_buffer = self.generate_analysis_plots(technical_data, breakeven_analysis, fib_levels)
+            # Generate plots
+            plot_buffer = self.generate_analysis_plots(technical_data, breakeven_analysis, fib_levels)
 
-        return {
-            'technical_data': technical_data_serializable.tail().to_dict(orient='records'),
-            'fibonacci_levels': {k: float(v) for k, v in fib_levels.items()},
-            'game_theory': {
-                'market_probabilities': {k: float(v) for k, v in game_theory_results['market_probability'].items()},
-                'strategy_expected_values': {k: float(v) for k, v in game_theory_results['strategy_expected_values'].items()},
-                'recommended_strategy': game_theory_results['recommended_strategy']
-            },
-            'breakeven_analysis': {
-                'call_breakeven': float(breakeven_analysis['call']['breakeven_point']),
-                'put_breakeven': float(breakeven_analysis['put']['breakeven_point']),
-                'max_loss_call': float(breakeven_analysis['call']['max_loss']),
-                'max_loss_put': float(breakeven_analysis['put']['max_loss'])
-            },
-            'sentiment_analysis': sentiment_data.to_dict(orient='records'),
-            'swot_analysis': swot_analysis,
-            'option_greeks': {
-                'call': {k: float(v) for k, v in option_greeks['call'].items()},
-                'put': {k: float(v) for k, v in option_greeks['put'].items()}
-            },
-            'market_report': market_report,
-            'plot_base64': plot_buffer
-        }
+            # Return comprehensive analysis results
+            return {
+                'technical_data': technical_data_serializable.tail().to_dict(orient='records'),
+                'fibonacci_levels': {k: float(v) for k, v in fib_levels.items()},
+                'game_theory': {
+                    'market_probabilities': {k: float(v) for k, v in game_theory_results['market_probability'].items()},
+                    'strategy_expected_values': {k: float(v) for k, v in game_theory_results['strategy_expected_values'].items()},
+                    'recommended_strategy': game_theory_results['recommended_strategy']
+                },
+                'breakeven_analysis': {
+                    'call_breakeven': float(breakeven_analysis['call']['breakeven_point']),
+                    'put_breakeven': float(breakeven_analysis['put']['breakeven_point']),
+                    'max_loss_call': float(breakeven_analysis['call']['max_loss']),
+                    'max_loss_put': float(breakeven_analysis['put']['max_loss'])
+                },
+                'sentiment_analysis': sentiment_data.to_dict(orient='records'),
+                'swot_analysis': swot_analysis,
+                'option_greeks': {
+                    'call': {k: float(v) for k, v in option_greeks['call'].items()},
+                    'put': {k: float(v) for k, v in option_greeks['put'].items()}
+                },
+                'market_report': market_report,
+                'plot_base64': plot_buffer
+            }
+
+        except Exception as e:
+            raise Exception(f"Analysis failed: {str(e)}")
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Flask App Initialization
-app = Flask(__name__)
-analyzer = NiftyOptionsAnalyzer()
-
+# Flask route update
 @app.route('/analyze', methods=['POST'])
 def analyze():
     try:
         data = request.get_json()
 
         # Validate input data
-        if not data or 'stock_name' not in data or 'data_string' not in data:
+        if not data or 'stock_name' not in data or 'data_array' not in data:
             return jsonify({
                 "status": "error",
-                "message": "Missing required fields: stock_name and data_string"
+                "message": "Missing required fields: stock_name and data_array"
             }), 400
 
-        stock_name = data['stock_name']
-        data_string = data['data_string']
+        # Validate data array structure
+        if not isinstance(data['data_array'], list) or not all(
+            isinstance(row, list) and len(row) == 6 for row in data['data_array']
+        ):
+            return jsonify({
+                "status": "error",
+                "message": "data_array must be an array of arrays, each with 6 values"
+            }), 400
 
+        # Create analyzer instance and process data
         analyzer = NiftyOptionsAnalyzer()
-        result = analyzer.comprehensive_trading_analysis(stock_name, data_string)
+        result = analyzer.comprehensive_trading_analysis(
+            data['stock_name'], 
+            data['data_array']
+        )
 
-        # Create a unified array of analysis results
+        # Create unified analysis results
         unified_analysis = [
             {
                 "type": "technical_data",
-                "data": [{str(k): str(v) for k, v in item.items()} for item in result['technical_data']]
+                "data": result['technical_data']
             },
             {
                 "type": "fibonacci_levels",
-                "data": [{
-                    "level": str(k),
-                    "value": str(v)
-                } for k, v in result['fibonacci_levels'].items()]
+                "data": [{"level": k, "value": v} for k, v in result['fibonacci_levels'].items()]
             },
             {
                 "type": "market_probabilities",
-                "data": [{
-                    "scenario": str(k),
-                    "probability": str(v)
-                } for k, v in result['game_theory']['market_probabilities'].items()]
+                "data": [{"scenario": k, "probability": v} for k, v in result['game_theory']['market_probabilities'].items()]
             },
             {
                 "type": "recommended_strategy",
-                "data": [{
-                    "strategy": str(result['game_theory']['recommended_strategy'])
-                }]
+                "data": [{"strategy": result['game_theory']['recommended_strategy']}]
             },
             {
                 "type": "breakeven_analysis",
-                "data": [{
-                    "metric": str(k),
-                    "value": str(v)
-                } for k, v in result['breakeven_analysis'].items()]
+                "data": [{"metric": k, "value": v} for k, v in result['breakeven_analysis'].items()]
             },
             {
                 "type": "sentiment_analysis",
-                "data": [{str(k): str(v) for k, v in item.items()} for item in result['sentiment_analysis']]
+                "data": result['sentiment_analysis']
             },
             {
                 "type": "swot_analysis",
-                "data": [{
-                    "category": str(k),
-                    "points": [str(v) for v in result['swot_analysis'][k]]
-                } for k in result['swot_analysis']]
+                "data": [{"category": k, "points": v} for k, v in result['swot_analysis'].items()]
             },
             {
                 "type": "option_greeks",
-                "data": [{
-                    "option_type": str(k),
-                    "metrics": {str(subk): str(subv) for subk, subv in v.items()}
-                } for k, v in result['option_greeks'].items()]
+                "data": [{"option_type": k, "metrics": v} for k, v in result['option_greeks'].items()]
             },
             {
                 "type": "market_report",
-                "data": [{
-                    "report": str(result['market_report'])
-                }]
+                "data": [{"report": result['market_report']}]
             },
             {
                 "type": "visualization",
-                "data": [{
-                    "plot": str(result['plot_base64'])
-                }]
+                "data": [{"plot": result['plot_base64']}]
             }
         ]
 
@@ -621,6 +610,7 @@ def analyze():
             "status": "error",
             "message": str(e)
         }), 500
+
 @app.route("/")
 def home():
     """
