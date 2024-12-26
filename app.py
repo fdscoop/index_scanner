@@ -527,6 +527,9 @@ class NiftyOptionsAnalyzer:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Flask initialization
+app = Flask(__name__)
+
 # Flask route update
 @app.route('/analyze', methods=['POST'])
 def analyze():
